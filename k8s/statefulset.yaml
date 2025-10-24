@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: conductor-validator
+  namespace: conductor
+spec:
+  serviceName: conductor
+  replicas: 5
+  selector:
+    matchLabels:
+      app: conductor
+  template:
+    metadata:
+      labels:
+        app: conductor
+    spec:
+      containers:
+      - name: conductor
+        image: chorus/conductor:latest
+        ports:
+        - containerPort: 4001
+          name: p2p
+        - containerPort: 50051
+          name: grpc
+        - containerPort: 9090
+          name: metrics
+        - containerPort: 8080
+          name: rest
+        env:
+        - name: VALIDATOR_KEYPAIR_PATH
+          value: /keys/validator_key.pem
+        - name: VALIDATOR_NETWORK_LISTEN_ADDRESS
+          value: 0.0.0.0:4001
+        - name: VALIDATOR_STORAGE_PATH
+          value: /data
+        - name: VALIDATOR_VDF_ITERATIONS
+          value: "86400000"
+        - name: VALIDATOR_LOG_LEVEL
+          value: "INFO"
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: keys
+          mountPath: /keys
+        - name: config
+          mountPath: /app/validator.yaml
+          subPath: validator.yaml
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
