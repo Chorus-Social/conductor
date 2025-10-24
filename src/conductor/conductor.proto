@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package conductor;
+
+message SubmitEventBatchRequest {
+  int32 epoch = 1;
+  repeated string events = 2; // List of event hashes (hex strings)
+}
+
+message SubmitEventBatchResponse {
+  string batch_id = 1; // Hex string
+  string status = 2;   // "pending", "accepted", "failed"
+}
+
+message GetBlockRequest {
+  int32 epoch = 1;
+}
+
+message GetBlockResponse {
+  int32 epoch = 1;
+  string block_hash = 2;    // Hex string
+  string merkle_root = 3;   // Hex string
+  repeated string events = 4; // List of event hashes (hex strings)
+  string quorum_cert = 5;   // Hex string
+}
+
+message GetDayProofRequest {
+  int32 day = 1;
+}
+
+message GetDayProofResponse {
+  int32 day_number = 1;
+  string vdf_proof = 2;     // Hex string
+  int32 difficulty = 3;
+  string quorum_cert = 4;   // Hex string
+}
+
+service ConductorService {
+  rpc SubmitEventBatch (SubmitEventBatchRequest) returns (SubmitEventBatchResponse);
+  rpc GetBlock (GetBlockRequest) returns (GetBlockResponse);
+  rpc GetDayProof (GetDayProofRequest) returns (GetDayProofResponse);
+}

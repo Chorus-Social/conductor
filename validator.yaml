@@ -1,0 +1,18 @@
+validator:
+  keypair_path: ./keys/validator_key.pem
+  network:
+    listen_address: 0.0.0.0:4001
+    bootstrap_peers: []
+  vdf:
+    iterations: 86400000
+    progress_interval: 1000000
+  storage:
+    backend: lmdb
+    path: ./validator_data
+  consensus:
+    min_validators: 3
+    threshold: 0.67
+    timeout: 120
+  monitoring:
+    prometheus_port: 9090
+    log_level: INFO

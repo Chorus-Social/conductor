@@ -1,0 +1,136 @@
+version: "3.8"
+
+services:
+  conductor-1:
+    image: chorus/conductor:latest
+    container_name: conductor-1
+    ports:
+      - "4001:4001"  # P2P network
+      - "50051:50051"  # gRPC API
+      - "8080:8080"  # REST API
+      - "9090:9090"  # Metrics
+    environment:
+      - VALIDATOR_KEYPAIR_PATH=/keys/validator_key.pem
+      - VALIDATOR_NETWORK_LISTEN_ADDRESS=0.0.0.0:4001
+      - VALIDATOR_STORAGE_PATH=/data
+      - VALIDATOR_VDF_ITERATIONS=86400000
+      - VALIDATOR_LOG_LEVEL=INFO
+    volumes:
+      - conductor-1-data:/data
+      - conductor-1-keys:/keys
+      - ./validator.yaml:/app/validator.yaml
+    networks:
+      - conductor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  conductor-2:
+    image: chorus/conductor:latest
+    container_name: conductor-2
+    ports:
+      - "4002:4001"  # P2P network
+      - "50052:50051"  # gRPC API
+      - "8081:8080"  # REST API
+      - "9091:9090"  # Metrics
+    environment:
+      - VALIDATOR_KEYPAIR_PATH=/keys/validator_key.pem
+      - VALIDATOR_NETWORK_LISTEN_ADDRESS=0.0.0.0:4001
+      - VALIDATOR_STORAGE_PATH=/data
+      - VALIDATOR_VDF_ITERATIONS=86400000
+      - VALIDATOR_LOG_LEVEL=INFO
+    volumes:
+      - conductor-2-data:/data
+      - conductor-2-keys:/keys
+      - ./validator.yaml:/app/validator.yaml
+    networks:
+      - conductor-network
+    depends_on:
+      - conductor-1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  conductor-3:
+    image: chorus/conductor:latest
+    container_name: conductor-3
+    ports:
+      - "4003:4001"  # P2P network
+      - "50053:50051"  # gRPC API
+      - "8082:8080"  # REST API
+      - "9092:9090"  # Metrics
+    environment:
+      - VALIDATOR_KEYPAIR_PATH=/keys/validator_key.pem
+      - VALIDATOR_NETWORK_LISTEN_ADDRESS=0.0.0.0:4001
+      - VALIDATOR_STORAGE_PATH=/data
+      - VALIDATOR_VDF_ITERATIONS=86400000
+      - VALIDATOR_LOG_LEVEL=INFO
+    volumes:
+      - conductor-3-data:/data
+      - conductor-3-keys:/keys
+      - ./validator.yaml:/app/validator.yaml
+    networks:
+      - conductor-network
+    depends_on:
+      - conductor-1
+      - conductor-2
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: conductor-prometheus
+    ports:
+      - "9093:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - conductor-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: conductor-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - conductor-network
+    depends_on:
+      - prometheus
+
+volumes:
+  conductor-1-data:
+  conductor-1-keys:
+  conductor-2-data:
+  conductor-2-keys:
+  conductor-3-data:
+  conductor-3-keys:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  conductor-network:
+    driver: bridge
