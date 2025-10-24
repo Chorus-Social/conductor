@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: conductor-config
+  namespace: conductor
+data:
+  validator.yaml: |
+    validator:
+      keypair_path: /keys/validator_key.pem
+      network:
+        listen_address: 0.0.0.0:4001
+        bootstrap_peers: []
+      vdf:
+        iterations: 86400000
+        progress_interval: 1000000
+        adjustment_interval_days: 10
+      storage:
+        backend: lmdb
+        path: /data
+      consensus:
+        min_validators: 3
+        threshold: 0.67
+        timeout: 120
+      monitoring:
+        prometheus_port: 9090
+        log_level: INFO
